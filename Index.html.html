@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tonight, beside me?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,400&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#2a1020; --bg2:#4a1d38; --ink:#fff1e6; --muted:#e9bfc9; --rose:#ff7a93; --peach:#ffc08a; --card:#fff1e6; --cardink:#3a1228;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#2a1020;--bg2:#4a1d38}}
+:root[data-theme="dark"]{--bg:#2a1020;--bg2:#4a1d38}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;height:100%;min-height:100vh;overflow:hidden;font-family:'DM Sans',system-ui,sans-serif;color:var(--ink);
+  background:radial-gradient(900px 600px at 80% 10%,var(--bg2),transparent 60%),radial-gradient(700px 500px at 10% 90%,#5a2140,transparent 60%),var(--bg);
+  display:flex;align-items:center;justify-content:center;text-align:center}
+.stage{padding:24px;max-width:640px;width:100%}
+.greet{font-family:'Fraunces',Georgia,serif;font-style:italic;font-size:clamp(1.3rem,5vw,1.8rem);color:var(--peach);margin:0 0 14px}
+h1{font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:clamp(2.4rem,9vw,4.4rem);line-height:1.05;margin:0 0 14px;letter-spacing:-.02em}
+h1 em{font-weight:400;color:var(--peach)}
+p.sub{margin:0 auto 38px;color:var(--muted);font-size:1.05rem;max-width:34ch;line-height:1.5}
+.row{display:flex;gap:18px;justify-content:center;align-items:center;min-height:64px}
+button{font:inherit;cursor:pointer;border:0;border-radius:999px;padding:16px 38px;font-weight:700;font-size:1.1rem;transition:transform .2s,box-shadow .2s}
+#yes{background:linear-gradient(135deg,var(--rose),var(--peach));color:#3a1228;box-shadow:0 10px 30px rgba(255,122,147,.35)}
+#yes:hover{transform:scale(1.06)}
+#yes:focus-visible{outline:3px solid #fff;outline-offset:3px}
+#no{background:transparent;color:var(--muted);border:1.5px solid rgba(233,191,201,.55);position:relative;z-index:5;touch-action:none}
+#no.free{position:fixed;transition:left .22s cubic-bezier(.3,1.4,.5,1),top .22s cubic-bezier(.3,1.4,.5,1)}
+.hint{position:fixed;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom,0px));font-size:.85rem;color:rgba(233,191,201,.7);min-height:1.2em}
+.heart{position:fixed;top:-30px;pointer-events:none;animation:fall linear forwards;z-index:1}
+@keyframes fall{to{transform:translateY(110vh) rotate(40deg);opacity:.9}}
+#reveal{display:none}
+.card{background:var(--card);color:var(--cardink);border-radius:28px;padding:34px 28px;box-shadow:0 30px 70px rgba(0,0,0,.4);animation:pop .55s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.7) translateY(20px);opacity:0}}
+.card h2{font-family:'Fraunces',Georgia,serif;font-weight:500;font-size:clamp(2rem,7vw,3rem);margin:0 0 6px;line-height:1.1}
+.card .lead{margin:0 0 26px;opacity:.75}
+.detail{display:flex;gap:14px;align-items:center;text-align:left;padding:16px 18px;border-radius:18px;background:#fff;margin:10px 0}
+.detail span.i{font-size:1.6rem}
+.detail small{display:block;opacity:.6;font-size:.8rem}
+.detail b{font-size:1.15rem}
+@media (prefers-reduced-motion:reduce){.heart{display:none}#no.free{transition:none}.card{animation:none}}
+</style>
+</head>
+<body>
+<main class="stage" id="ask">
+  <div class="greet">Hey my cheery ji</div>
+  <h1 id="title">Would you like to be <em>beside me</em> today<span id="who"></span>?</h1>
+  <p class="sub">Friends' group dinner tonight, and I want you sitting next to me.</p>
+  <div class="row">
+    <button id="yes">Yes</button>
+    <button id="no" tabindex="-1" aria-hidden="true">No</button>
+  </div>
+</main>
+<main class="stage" id="reveal">
+  <div class="card">
+    <h2>Then it's settled.</h2>
+    <p class="lead">Friends' dinner tonight, and you're next to me.</p>
+    <div class="detail"><span class="i">📍</span><div><small>Venue</small><b id="venue"></b></div></div>
+    <div class="detail"><span class="i">🕖</span><div><small>Time</small><b id="time"></b></div></div>
+  </div>
+</main>
+<div class="hint" id="hint"></div>
+
+<script>
+// ---- Edit these, or use a link like ?name=Priya&venue=Cafe%20Name&time=Sat%207%20PM ----
+var CONFIG = {
+  name: "",
+  venue: "Heritage Inn",
+  time: "Today, 08:30 PM"
+};
+var q = new URLSearchParams(location.search);
+var name = q.get("name") || CONFIG.name;
+var venue = q.get("venue") || CONFIG.venue;
+var when = q.get("time") || CONFIG.time;
+if (name) { document.getElementById("who").textContent = ", " + name; document.title = "For " + name; }
+document.getElementById("venue").textContent = venue;
+document.getElementById("time").textContent = when;
+
+var no = document.getElementById("no"), yes = document.getElementById("yes"), hint = document.getElementById("hint");
+var lines = ["Nice try.","Too slow.","Everyone is waiting for you.","Almost had it.","The button says no to no.","Just press Yes."];
+var n = 0, last = 0;
+
+function rect(el){ return el.getBoundingClientRect(); }
+function dodge(){
+  var now = Date.now(); if (now - last < 120) return; last = now;
+  var w = no.offsetWidth, h = no.offsetHeight, pad = 16;
+  var maxX = window.innerWidth - w - pad, maxY = window.innerHeight - h - pad - 40;
+  var y = rect(yes), tries = 0, x, t;
+  do {
+    x = pad + Math.random() * Math.max(0, maxX - pad);
+    t = pad + Math.random() * Math.max(0, maxY - pad);
+    tries++;
+  } while (tries < 30 && (
+    x < y.right + 40 && x + w > y.left - 40 && t < y.bottom + 40 && t + h > y.top - 40
+  ));
+  if (!no.classList.contains("free")) {
+    var r = rect(no); no.style.left = r.left + "px"; no.style.top = r.top + "px";
+    no.classList.add("free"); void no.offsetWidth;
+  }
+  no.style.left = x + "px"; no.style.top = t + "px";
+  hint.textContent = lines[n % lines.length]; n++;
+}
+
+no.addEventListener("pointerenter", dodge);
+no.addEventListener("pointerdown", function(e){ e.preventDefault(); dodge(); });
+no.addEventListener("touchstart", function(e){ e.preventDefault(); dodge(); }, {passive:false});
+no.addEventListener("click", function(e){ e.preventDefault(); e.stopImmediatePropagation(); dodge(); });
+no.addEventListener("focus", function(){ no.blur(); dodge(); });
+// Dodge before the pointer even arrives
+document.addEventListener("pointermove", function(e){
+  var r = rect(no), cx = r.left + r.width/2, cy = r.top + r.height/2;
+  if (Math.hypot(e.clientX - cx, e.clientY - cy) < Math.max(r.width, r.height) * 1.1 + 24) dodge();
+});
+window.addEventListener("resize", function(){
+  if (no.classList.contains("free")) { no.style.left = "20px"; no.style.top = "20px"; dodge(); }
+});
+
+function hearts(){
+  var set = ["💖","💗","💕","🌹","✨"];
+  for (var i = 0; i < 40; i++) {
+    var h = document.createElement("div");
+    h.className = "heart"; h.textContent = set[i % set.length];
+    h.style.left = Math.random() * 100 + "vw";
+    h.style.fontSize = 18 + Math.random() * 22 + "px";
+    h.style.animationDuration = 3 + Math.random() * 3 + "s";
+    h.style.animationDelay = Math.random() * 1.2 + "s";
+    document.body.appendChild(h);
+    setTimeout(function(el){ el.remove(); }, 8000, h);
+  }
+}
+yes.addEventListener("click", function(){
+  document.getElementById("ask").style.display = "none";
+  no.style.display = "none"; hint.style.display = "none";
+  document.getElementById("reveal").style.display = "block";
+  hearts();
+});
+</script>
+</body>
+</html>
